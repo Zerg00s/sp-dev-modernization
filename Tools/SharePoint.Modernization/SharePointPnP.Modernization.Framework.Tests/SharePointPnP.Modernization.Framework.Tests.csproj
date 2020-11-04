@@ -243,7 +243,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
-    <None Include="App.config.sample" />
     <None Include="packages.config" />
     <None Include="Provision\Common\Readme.md" />
     <None Include="Provision\Documents\Contoso_Report.pptx" />
