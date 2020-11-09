@@ -43,7 +43,7 @@ namespace SharePoint.Modernization.Scanner.Core
         {
             var versionInfo = VersionCheck.LatestVersion();
             this.CurrentVersion = versionInfo.Item1;
-            this.NewVersion = versionInfo.Item2;            
+            this.NewVersion = versionInfo.Item2;
         }
         #endregion
 

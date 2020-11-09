@@ -28,16 +28,30 @@ namespace SharePoint.Modernization.Scanner.Core.Analyzers
 
         private static readonly string[] OOBWorkflowIDStarts = new string[]
         {
-            "e43856d2-1bb4-40ef-b08b-016d89a00",    // Publishing approval
+            "e43856d2-1bb4-40ef-b08b-016d89a00",    // Publishing approval | 2013
             "3bfb07cb-5c6a-4266-849b-8d6711700409", // Collect feedback - 2010
-            "46c389a4-6e18-476c-aa17-289b0c79fb8f", // Collect feedback
+            "46c389a4-6e18-476c-aa17-289b0c79fb8f", // Collect feedback | 2013
             "77c71f43-f403-484b-bcb2-303710e00409", // Collect signatures - 2010
-            "2f213931-3b93-4f81-b021-3022434a3114", // Collect signatures
+            "2f213931-3b93-4f81-b021-3022434a3114", // Collect signatures | 
             "8ad4d8f0-93a7-4941-9657-cf3706f00409", // Approval - 2010
             "b4154df4-cc53-4c4f-adef-1ecf0b7417f6", // Translation management
-            "c6964bff-bf8d-41ac-ad5e-b61ec111731a", // Three state
-            "c6964bff-bf8d-41ac-ad5e-b61ec111731c", // Approval
-            "dd19a800-37c1-43c0-816d-f8eb5f4a4145", // Disposition approval
+            "c6964bff-bf8d-41ac-ad5e-b61ec111731a", // Three state | 2010
+            "c6964bff-bf8d-41ac-ad5e-b61ec111731c", // Approval |
+            "dd19a800-37c1-43c0-816d-f8eb5f4a4145", // Disposition approval |
+        };
+
+        public static Dictionary<string, string> OOBWorkflowNames = new Dictionary<string, string>
+        {
+           { "e43856d2-1bb4-40ef-b08b-016d89a00",    "Publishing approval" },
+           { "3bfb07cb-5c6a-4266-849b-8d6711700409", "Collect feedback - 2010" },
+           { "46c389a4-6e18-476c-aa17-289b0c79fb8f", "Collect feedback" },
+           { "77c71f43-f403-484b-bcb2-303710e00409", "Collect signatures - 2010" },
+           { "2f213931-3b93-4f81-b021-3022434a3114", "Collect signatures" },
+           { "8ad4d8f0-93a7-4941-9657-cf3706f00409", "Approval - 2010" },
+           { "b4154df4-cc53-4c4f-adef-1ecf0b7417f6", "Translation management" },
+           { "c6964bff-bf8d-41ac-ad5e-b61ec111731a", "Three state" },
+           { "c6964bff-bf8d-41ac-ad5e-b61ec111731c", "Approval" },
+           { "dd19a800-37c1-43c0-816d-f8eb5f4a4145", "Disposition approval" }
         };
 
         private List<SP2010WorkFlowAssociation> sp2010WorkflowAssociations;
@@ -53,7 +67,7 @@ namespace SharePoint.Modernization.Scanner.Core.Analyzers
         /// <param name="scanJob">Job that launched this analyzer</param>
         public WorkflowAnalyzer(string url, string siteColUrl, ModernizationScanJob scanJob) : base(url, siteColUrl, scanJob)
         {
-            this.sp2010WorkflowAssociations = new List<SP2010WorkFlowAssociation>(20);            
+            this.sp2010WorkflowAssociations = new List<SP2010WorkFlowAssociation>(20);
         }
         #endregion
 
@@ -76,9 +90,9 @@ namespace SharePoint.Modernization.Scanner.Core.Analyzers
                 Web web = cc.Web;
 
                 // Pre-load needed properties in a single call
-                cc.Load(web, w => w.Id, w => w.Language, w => w.ServerRelativeUrl, w => w.Url, w => w.WorkflowTemplates, w => w.WorkflowAssociations);
+                cc.Load(web, _web => _web.Id, _web => _web.Language, _web => _web.ServerRelativeUrl, _web => _web.Url, _web => _web.WorkflowTemplates, _web => _web.WorkflowAssociations, _web => _web.LastItemModifiedDate, _web => _web.LastItemUserModifiedDate);
                 cc.Load(web, p => p.ContentTypes.Include(ct => ct.WorkflowAssociations, ct => ct.Name, ct => ct.StringId));
-                cc.Load(web, p=>p.Lists.Include(li => li.Id, li => li.Title, li => li.Hidden, li => li.DefaultViewUrl, li => li.BaseTemplate , li => li.RootFolder.ServerRelativeUrl, li => li.ItemCount, li => li.WorkflowAssociations, li => li.ContentTypesEnabled, li=> li.ContentTypes.Include(ct => ct.WorkflowAssociations, ct => ct.Name, ct => ct.StringId)));
+                cc.Load(web, _web => _web.Lists.Include(list => list.Id, list => list.LastItemUserModifiedDate, list => list.LastItemModifiedDate, list => list.Title, list => list.Hidden, li => li.DefaultViewUrl, li => li.BaseTemplate, li => li.RootFolder.ServerRelativeUrl, li => li.ItemCount, li => li.WorkflowAssociations, li => li.ContentTypesEnabled, li => li.ContentTypes.Include(ct => ct.WorkflowAssociations, ct => ct.Name, ct => ct.StringId)));
                 cc.Load(cc.Site, p => p.RootWeb);
                 cc.Load(cc.Site.RootWeb, p => p.Lists.Include(li => li.Id, li => li.Title, li => li.Hidden, li => li.DefaultViewUrl, li => li.BaseTemplate, li => li.RootFolder.ServerRelativeUrl, li => li.ItemCount, li => li.WorkflowAssociations, li => li.ContentTypesEnabled, li => li.ContentTypes.Include(ct => ct.WorkflowAssociations, ct => ct.Name, ct => ct.StringId)));
                 cc.ExecuteQueryRetry();
@@ -118,7 +132,7 @@ namespace SharePoint.Modernization.Scanner.Core.Analyzers
                     // If there is no workflow service present in the farm this method will throw an error. 
                     // Swallow the exception
                 }
-               
+
                 // We've found SP2013 site scoped workflows
                 if (siteDefinitions != null && siteDefinitions.Count() > 0)
                 {
@@ -398,7 +412,6 @@ namespace SharePoint.Modernization.Scanner.Core.Analyzers
 
                 if (web.WorkflowTemplates.Count > 0)
                 {
-
                     // Process the templates
                     foreach (var workflowTemplate in web.WorkflowTemplates)
                     {
@@ -456,6 +469,7 @@ namespace SharePoint.Modernization.Scanner.Core.Analyzers
                                     Enabled = associatedWorkflow.WorkflowAssociation.Enabled,
                                     DefinitionId = workflowTemplate.Id,
                                     IsOOBWorkflow = IsOOBWorkflow(workflowTemplate.Id.ToString()),
+
                                     SubscriptionId = associatedWorkflow.WorkflowAssociation.Id,
                                     UsedActions = workFlowAnalysisResult?.WorkflowActions,
                                     ActionCount = workFlowAnalysisResult != null ? workFlowAnalysisResult.ActionCount : 0,
@@ -464,6 +478,14 @@ namespace SharePoint.Modernization.Scanner.Core.Analyzers
                                     UnsupportedActionCount = workFlowAnalysisResult != null ? workFlowAnalysisResult.UnsupportedAccountCount : 0,
                                     LastDefinitionEdit = loadedWorkflow != null ? loadedWorkflow.Item2 : associatedWorkflow.WorkflowAssociation.Modified,
                                     LastSubscriptionEdit = associatedWorkflow.WorkflowAssociation.Modified,
+                                    // WEB WORKFLOW:
+                                    OOBWorkflowName = IsOOBWorkflow(workflowTemplate.Id.ToString()) ? OOBWorkflowNames[workflowTemplate.Id.ToString()] : "",
+                                    LastListItemEdit = associatedWorkflow.AssociatedList != null ? associatedWorkflow.AssociatedList.LastItemModifiedDate : new DateTime(1, 1, 1, 0, 0, 0, 0),
+                                    LastListItemEditByUser = associatedWorkflow.AssociatedList != null ? associatedWorkflow.AssociatedList.LastItemUserModifiedDate : new DateTime(1, 1, 1, 0, 0, 0, 0),
+                                    LastWebItemEdit = web.LastItemModifiedDate,
+                                    LastWebItemEditByUser = web.LastItemUserModifiedDate,
+                                    UpgradeEfforts = Math.Round(workFlowAnalysisResult != null ? workFlowAnalysisResult.UpgradeEfforts : OOTBWorkflowEfforts(workflowTemplate.Id.ToString()),1),
+                                    TotalActionCount = workFlowAnalysisResult != null ? workFlowAnalysisResult.TotalActionCount : 0
                                 };
 
                                 if (!this.ScanJob.WorkflowScanResults.TryAdd($"workflowScanResult.SiteURL.{Guid.NewGuid()}", workflowScanResult))
@@ -542,7 +564,7 @@ namespace SharePoint.Modernization.Scanner.Core.Analyzers
                 }
 
                 // Are there associated workflows for which we did not find a template (especially when the WF is created for a list)
-                foreach(var associatedWorkflow in this.sp2010WorkflowAssociations)
+                foreach (var associatedWorkflow in this.sp2010WorkflowAssociations)
                 {
                     if (!processedWorkflowAssociations.Contains(associatedWorkflow.WorkflowAssociation.Id))
                     {
@@ -593,6 +615,16 @@ namespace SharePoint.Modernization.Scanner.Core.Analyzers
                             UsedTriggers = workFlowTriggerAnalysisResult?.WorkflowTriggers,
                             LastSubscriptionEdit = associatedWorkflow.WorkflowAssociation.Modified,
                             LastDefinitionEdit = loadedWorkflow != null ? loadedWorkflow.Item2 : associatedWorkflow.WorkflowAssociation.Modified,
+                            // Custom List WORKFLOW:
+                            OOBWorkflowName = "",
+                            LastListItemEditByUser = associatedWorkflow.AssociatedList != null ? associatedWorkflow.AssociatedList.LastItemUserModifiedDate : new DateTime(1, 1, 1, 0, 0, 0, 0),
+                            LastWebItemEdit = web.LastItemModifiedDate,
+                            LastWebItemEditByUser = web.LastItemUserModifiedDate,
+                            UpgradeEfforts = workFlowAnalysisResult != null ? workFlowAnalysisResult.UpgradeEfforts : 0,
+                            TotalActionCount = workFlowAnalysisResult != null ? workFlowAnalysisResult.TotalActionCount : 0
+
+
+
                         };
 
                         if (!this.ScanJob.WorkflowScanResults.TryAdd($"workflowScanResult.SiteURL.{Guid.NewGuid()}", workflowScanResult))
@@ -607,12 +639,12 @@ namespace SharePoint.Modernization.Scanner.Core.Analyzers
                             this.ScanJob.ScanErrors.Push(error);
                         }
                     }
-                    
+
                 }
 
                 #endregion
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 ScanError error = new ScanError()
                 {
@@ -642,7 +674,7 @@ namespace SharePoint.Modernization.Scanner.Core.Analyzers
 
         internal static void PopulateAdminAndOwnerColumns(ConcurrentDictionary<string, SiteScanResult> siteScanResults, ConcurrentDictionary<string, WorkflowScanResult> workflowScanResults)
         {
-            foreach(var workflowScanResult in workflowScanResults)
+            foreach (var workflowScanResult in workflowScanResults)
             {
                 if (siteScanResults.ContainsKey(workflowScanResult.Value.SiteColUrl))
                 {
@@ -692,7 +724,7 @@ namespace SharePoint.Modernization.Scanner.Core.Analyzers
         }
 
         private Tuple<string, DateTime> LoadWorkflowDefinition(ClientContext cc, WorkflowAssociation workflowAssociation)
-        {            
+        {
             // Ensure the workflow library was loaded if not yet done
             LoadWorkflowLibrary(cc);
             try
@@ -720,12 +752,12 @@ namespace SharePoint.Modernization.Scanner.Core.Analyzers
             if (!IsOOBWorkflow(workflowTemplate.Id.ToString()))
             {
                 // Ensure the workflow library was loaded if not yet done
-                LoadWorkflowLibrary(cc);                
+                LoadWorkflowLibrary(cc);
                 try
                 {
                     return GetFileInformation(cc.Web, $"{this.workflowList.RootFolder.ServerRelativeUrl}/{workflowTemplate.Name}/{workflowTemplate.Name}.xoml");
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                 }
 
@@ -789,7 +821,7 @@ namespace SharePoint.Modernization.Scanner.Core.Analyzers
                 return this.workflowList;
             }
 
-            var baseExpressions = new List<Expression<Func<List, object>>> { l => l.DefaultViewUrl, l => l.Id, l => l.BaseTemplate, l => l.OnQuickLaunch, l => l.DefaultViewUrl, l => l.Title, l => l.Hidden, l=>l.RootFolder.ServerRelativeUrl };
+            var baseExpressions = new List<Expression<Func<List, object>>> { l => l.DefaultViewUrl, l => l.Id, l => l.BaseTemplate, l => l.OnQuickLaunch, l => l.DefaultViewUrl, l => l.Title, l => l.Hidden, l => l.RootFolder.ServerRelativeUrl };
             var query = cc.Web.Lists.IncludeWithDefaultProperties(baseExpressions.ToArray());
             //var lists = cc.Web.Context.LoadQuery(query.Where(l => l.Title == "Workflows"));
             var lists = cc.Web.Context.LoadQuery(query.Where(l => l.BaseTemplate == 117));
@@ -850,7 +882,7 @@ namespace SharePoint.Modernization.Scanner.Core.Analyzers
         {
             if (!string.IsNullOrEmpty(workflowTemplateId))
             {
-                foreach(var oobId in WorkflowAnalyzer.OOBWorkflowIDStarts)
+                foreach (var oobId in WorkflowAnalyzer.OOBWorkflowIDStarts)
                 {
                     if (workflowTemplateId.StartsWith(oobId))
                     {
@@ -860,6 +892,52 @@ namespace SharePoint.Modernization.Scanner.Core.Analyzers
             }
 
             return false;
+        }
+        private decimal OOTBWorkflowEfforts(string workflowTemplateId)
+        {
+            if (IsOOBWorkflow(workflowTemplateId))
+            {
+
+                switch (OOBWorkflowNames[workflowTemplateId])
+                {
+                    case "Publishing approval":
+                        return (decimal)2;
+
+                    case "Collect feedback - 2010":
+                        return (decimal)2.5;
+
+                    case "Collect feedback":
+                        return (decimal)2.5;
+
+                    case "Collect signatures - 2010":
+                        return (decimal)3;
+
+                    case "Collect signatures":
+                        return (decimal)3;
+
+                    case "Approval - 2010":
+                        return (decimal)2;
+
+                    case "Translation management":
+                        return (decimal)4;
+
+                    case "Three state":
+                        return (decimal)2.5;
+
+                    case "Approval":
+                        return (decimal)2;
+
+                    case "Disposition approval":
+                        return (decimal)2.5;
+
+                    default:
+                        return 0;
+                }
+            }
+            else
+            {
+                return 0;
+            }
         }
 
         private static string PreviousWorkflowString(uint language)

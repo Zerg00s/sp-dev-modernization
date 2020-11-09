@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace SharePoint.Modernization.Scanner.Core.Results
 {
-    public class WorkflowScanResult: Scan
+    public class WorkflowScanResult : Scan
     {
         public WorkflowScanResult()
         {
@@ -34,6 +34,7 @@ namespace SharePoint.Modernization.Scanner.Core.Results
         public string Version { get; set; }
 
         public bool IsOOBWorkflow { get; set; }
+        public string OOBWorkflowName { get; set; }
 
         /// <summary>
         /// Site, List, ContentType
@@ -101,6 +102,15 @@ namespace SharePoint.Modernization.Scanner.Core.Results
 
         public DateTime LastSubscriptionEdit { get; set; }
 
+
+        public DateTime LastListItemEdit { get; set; }
+
+        public DateTime LastWebItemEdit { get; set; }
+
+        public DateTime LastListItemEditByUser { get; set; }
+
+        public DateTime LastWebItemEditByUser { get; set; }
+
         public DateTime LastDefinitionEdit { get; set; }
 
         /// <summary>
@@ -111,6 +121,10 @@ namespace SharePoint.Modernization.Scanner.Core.Results
         /// Site owners
         /// </summary>
         public List<UserEntity> Owners { get; set; }
+
+        public decimal UpgradeEfforts { get; set; }
+        public int TotalActionCount { get; set; }
+
 
     }
 }

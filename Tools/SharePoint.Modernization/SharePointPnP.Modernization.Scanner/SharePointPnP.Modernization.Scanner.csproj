@@ -7,7 +7,7 @@
     <ProjectGuid>{74E4621E-6ED0-4138-80C4-0ADF70DFC202}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <RootNamespace>SharePoint.Modernization.Scanner</RootNamespace>
-    <AssemblyName>SharePoint.Modernization.Scanner</AssemblyName>
+    <AssemblyName>Workflow2010.Scanner</AssemblyName>
     <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <NuGetPackageImportStamp>

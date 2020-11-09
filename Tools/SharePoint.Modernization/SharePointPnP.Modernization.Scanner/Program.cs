@@ -44,6 +44,16 @@ namespace SharePoint.Modernization.Scanner
                 options.ValidateOptions(args);
             }
 
+            //options.User = "admin@CleverPointDev.onmicrosoft.com";
+            //options.Password = "_____";
+            //options.TenantAdminSite = "https://cleverpointdev-admin.sharepoint.com";
+            //options.Urls = new List<string>();
+            //options.Urls.Add("https://cleverpointdev.sharepoint.com/sites/ClassicTeam");
+            //options.Threads = 10;
+            //options.Separator = ",";
+            //options.Mode = Mode.WorkflowWithDetailsOnly;
+            //options.DateFormat = "M/d/yyyy";
+
             if (options.ExportPaths != null && options.ExportPaths.Count > 0)
             {
                 List<ReportStream> reportStreams = new List<ReportStream>();

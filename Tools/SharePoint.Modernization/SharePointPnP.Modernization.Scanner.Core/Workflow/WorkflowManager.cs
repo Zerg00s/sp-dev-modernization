@@ -53,6 +53,7 @@ namespace SharePoint.Modernization.Scanner.Core.Workflow
             "Microsoft.SharePoint.WorkflowServices.Activities.SetModerationStatus"
         };
 
+
         private static readonly string[] SP2010SupportedFlowActions = new string[]
         {
             "Microsoft.SharePoint.WorkflowActions.EmailActivity",
@@ -89,7 +90,49 @@ namespace SharePoint.Modernization.Scanner.Core.Workflow
             "Microsoft.SharePoint.WorkflowActions.WithKey.AddListItemPermissionsActivity",
             "Microsoft.SharePoint.WorkflowActions.WithKey.RemoveListItemPermissionsActivity",
             "Microsoft.SharePoint.WorkflowActions.WithKey.ReplaceListItemPermissionsActivity",
-            "Microsoft.SharePoint.WorkflowActions.WithKey.InheritListItemParentPermissionsActivity"
+            "Microsoft.SharePoint.WorkflowActions.WithKey.InheritListItemParentPermissionsActivity",
+
+            // ACTIONS MISSED BY THE MODERNIZATION SCANNER:
+            "Microsoft.SharePoint.WorkflowActions.ClearArrayListActivity "
+        };
+
+        static Dictionary<string, decimal> SP2010ActionEfforts = new Dictionary<string, decimal>
+        {
+            { "EmailActivity", (decimal)0.25 }, // 15 min
+            { "CollectDataTask", (decimal)0.60 }, // 36 min 
+            { "TodoItemTask", (decimal)0.25 }, // 0.25 - 15 min 
+            { "GroupAssignedTask", (decimal)0.5 }, // 30 min 
+            { "SetFieldActivity",(decimal)0.17 }, // 10 min
+            { "UpdateItemActivity",(decimal)0.25 }, // 15 min
+            { "CreateItemActivity",(decimal)0.20 }, // 12 min
+            { "CopyItemActivity",(decimal)0.25 }, // 15 min
+            { "CheckOutItemActivity",(decimal)0.17 }, // 10 min
+            { "CheckInItemActivity",(decimal)0.17 }, // 10 min
+            { "UndoCheckOutItemActivity",(decimal)0.25 }, // 15 min
+            { "DeleteItemActivity",(decimal)0.17 }, // 10 min
+            { "WaitForActivity",(decimal)0.17 }, // 10 min
+            { "WaitForDocumentStatusActivity",(decimal)0.17 }, // 10 min
+            { "SetVariableActivity",(decimal)0.17 }, // 10 min
+            { "BuildStringActivity",(decimal)0.17 }, // 10 min
+            { "MathActivity",(decimal)0.8 }, // 5 min
+            { "DelayForActivity",(decimal)0.17 }, // 10 min
+            { "DelayUntilActivity",(decimal)0.17 }, // 10 min
+            { "TerminateActivity",(decimal)0.17 }, // 10 min
+            { "LogToHistoryListActivity",(decimal)0.17 }, // 10 min
+            { "SetModerationStatusActivity",(decimal)0.17 }, // 10 min
+            { "AddTimeToDateActivity",(decimal)0.40 }, // 24 min
+            { "SetTimeFieldActivity",(decimal)0.40 }, // 24 min
+            { "DateIntervalActivity",(decimal)0.40 }, // 24 min
+            { "ExtractSubstringFromEndActivity",(decimal)0.17 }, // 10 min
+            { "ExtractSubstringFromStartActivity",(decimal)0.17 }, // 10 min
+            { "ExtractSubstringFromIndexActivity",(decimal)0.17 }, // 10 min
+            { "ExtractSubstringFromIndexLengthActivity",(decimal)0.17 }, // 10 min
+            { "CommentActivity",(decimal)0.17 }, // 10 min
+            { "PersistOnCloseActivity",(decimal)0.08 }, // 5 min
+            { "AddListItemPermissionsActivity",(decimal)0.40 }, //  24 min
+            { "RemoveListItemPermissionsActivity",(decimal)0.40 }, //  24 min
+            { "ReplaceListItemPermissionsActivity",(decimal)0.40 }, //  24 min
+            { "InheritListItemParentPermissionsActivity", (decimal)0.40 } //  24 min
         };
 
         /// <summary>
@@ -204,27 +247,29 @@ namespace SharePoint.Modernization.Scanner.Core.Workflow
                 int actionCounter = 0;
                 int knownActionCounter = 0;
                 int unsupportedActionCounter = 0;
+                decimal upgradeEffortsCounter = 0;
 
                 foreach (XmlNode node in nodes)
                 {
-                    ParseXmlNode(wfType, usedOOBWorkflowActivities, unsupportedOOBWorkflowActivities, ref actionCounter, ref knownActionCounter, ref unsupportedActionCounter, node);
+                    ParseXmlNode(wfType, usedOOBWorkflowActivities, unsupportedOOBWorkflowActivities, ref actionCounter, ref knownActionCounter, ref unsupportedActionCounter, ref upgradeEffortsCounter, node);
                 }
-
 
                 if (wfType == WorkflowTypes.SP2010 && ns1Nodes != null && ns1Nodes.Count > 0)
                 {
                     foreach (XmlNode node in ns1Nodes)
                     {
-                        ParseXmlNode(wfType, usedOOBWorkflowActivities, unsupportedOOBWorkflowActivities, ref actionCounter, ref knownActionCounter, ref unsupportedActionCounter, node);
+                        ParseXmlNode(wfType, usedOOBWorkflowActivities, unsupportedOOBWorkflowActivities, ref actionCounter, ref knownActionCounter, ref unsupportedActionCounter, ref upgradeEffortsCounter, node);
                     }
                 }
 
                 return new WorkflowActionAnalysis()
                 {
                     WorkflowActions = usedOOBWorkflowActivities,
+                    TotalActionCount = actionCounter,
                     ActionCount = knownActionCounter,
                     UnsupportedActions = unsupportedOOBWorkflowActivities,
-                    UnsupportedAccountCount = unsupportedActionCounter
+                    UnsupportedAccountCount = unsupportedActionCounter,
+                    UpgradeEfforts = upgradeEffortsCounter                    
                 };
             }
             catch (Exception ex)
@@ -236,36 +281,46 @@ namespace SharePoint.Modernization.Scanner.Core.Workflow
             return null;
         }
 
-        private void ParseXmlNode(WorkflowTypes wfType, List<string> usedOOBWorkflowActivities, List<string> unsupportedOOBWorkflowActivities, ref int actionCounter, ref int knownActionCounter, ref int unsupportedActionCounter, XmlNode node)
+        private void ParseXmlNode(WorkflowTypes wfType, List<string> usedOOBWorkflowActivities, List<string> unsupportedOOBWorkflowActivities, ref int actionCounter,
+            ref int knownActionCounter, ref int unsupportedActionCounter, ref decimal upgradeEffortsCounter, XmlNode currentWorkflowNode)
         {
             actionCounter++;
+
 
             WorkflowAction defaultOOBWorkflowAction = null;
 
             if (wfType == WorkflowTypes.SP2010)
             {
-                defaultOOBWorkflowAction = this.defaultWorkflowActions.SP2010DefaultActions.Where(p => p.ActionNameShort == node.LocalName).FirstOrDefault();
+                defaultOOBWorkflowAction = this.defaultWorkflowActions.SP2010DefaultActions.Where(action => action.ActionNameShort == currentWorkflowNode.LocalName).FirstOrDefault();
             }
             else if (wfType == WorkflowTypes.SP2013)
             {
-                defaultOOBWorkflowAction = this.defaultWorkflowActions.SP2013DefaultActions.Where(p => p.ActionNameShort == node.LocalName).FirstOrDefault();
+                defaultOOBWorkflowAction = this.defaultWorkflowActions.SP2013DefaultActions.Where(p => p.ActionNameShort == currentWorkflowNode.LocalName).FirstOrDefault();
             }
+
+            // ========================================================================================================== //
 
             if (defaultOOBWorkflowAction != null)
             {
+                // ========================================================================================================== //
+                
                 knownActionCounter++;
                 if (!usedOOBWorkflowActivities.Contains(defaultOOBWorkflowAction.ActionNameShort))
                 {
                     usedOOBWorkflowActivities.Add(defaultOOBWorkflowAction.ActionNameShort);
                 }
 
-
                 if (wfType == WorkflowTypes.SP2010)
                 {
                     if (!WorkflowManager.SP2010SupportedFlowActions.Contains(defaultOOBWorkflowAction.ActionName))
-                    {
+                    {  // unsupported actions
                         unsupportedActionCounter++;
                         unsupportedOOBWorkflowActivities.Add(defaultOOBWorkflowAction.ActionNameShort);
+                        upgradeEffortsCounter += 1;
+                    }
+                    else
+                    {
+                        upgradeEffortsCounter += SP2010ActionEfforts[defaultOOBWorkflowAction.ActionNameShort];
                     }
                 }
                 else if (wfType == WorkflowTypes.SP2013)
@@ -289,7 +344,7 @@ namespace SharePoint.Modernization.Scanner.Core.Workflow
             var sp2010Actions = LoadDefaultActions(WorkflowTypes.SP2010);
             var sp2013Actions = LoadDefaultActions(WorkflowTypes.SP2013);
 
-            foreach(var action in sp2010Actions)
+            foreach (var action in sp2010Actions)
             {
                 wfActions.SP2010DefaultActions.Add(new WorkflowAction() { ActionName = action, ActionNameShort = GetShortName(action) });
             }
@@ -348,7 +403,7 @@ namespace SharePoint.Modernization.Scanner.Core.Workflow
                         wfInformation = (SP2010.WorkflowInfo)xmlWorkflowInformation.Deserialize(stream);
                     }
 
-                    foreach(var wfAction in wfInformation.Actions.Action)
+                    foreach (var wfAction in wfInformation.Actions.Action)
                     {
                         if (!wfActionsList.Contains(wfAction.ClassName))
                         {

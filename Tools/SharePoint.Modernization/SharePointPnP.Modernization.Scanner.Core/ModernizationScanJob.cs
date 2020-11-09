@@ -23,7 +23,7 @@ using System.Diagnostics;
 
 namespace SharePoint.Modernization.Scanner.Core
 {
-    public class ModernizationScanJob: ScanJob
+    public class ModernizationScanJob : ScanJob
     {
         #region Variables
         private Int32 SitesToScan = 0;
@@ -64,7 +64,7 @@ namespace SharePoint.Modernization.Scanner.Core
         public Tenant SPOTenant;
         public PageTransformation PageTransformation;
         public ScannerTelemetry ScannerTelemetry;
-        
+
         public string WorkingFolder { get; set; }
         public IDistributedCache Store { get; set; }
         public ICacheOptions StoreOptions { get; set; }
@@ -133,7 +133,7 @@ namespace SharePoint.Modernization.Scanner.Core
             if (!options.DisableTelemetry)
             {
                 this.ScannerTelemetry = new ScannerTelemetry();
-                
+
                 // Log scan start event
                 if (this.ScannerTelemetry != null)
                 {
@@ -267,7 +267,7 @@ namespace SharePoint.Modernization.Scanner.Core
                             masterPageGalleryCustomization = webAnalyzer.MasterPageGalleryCustomization;
                         }
                     }
-                    catch(Exception ex)
+                    catch (Exception ex)
                     {
                         ScanError error = new ScanError()
                         {
@@ -329,7 +329,7 @@ namespace SharePoint.Modernization.Scanner.Core
         /// <param name="addedSites">List of sites found to scan</param>
         /// <returns>Updated list of sites to scan</returns>
         public override List<string> ResolveAddedSites(List<string> addedSites)
-        {            
+        {
             try
             {
                 this.AppOnlyHasFullControl = this.AppOnlyManager.AppOnlyTokenHasFullControl(this.options, addedSites);
@@ -374,12 +374,12 @@ namespace SharePoint.Modernization.Scanner.Core
             else
             {
                 sites = base.ResolveAddedSites(addedSites);
-            }            
+            }
             this.SitesToScan = sites.Count;
 
             //Perform global initialization tasks, things you only want to do once per run
             if (sites.Count > 0)
-            {                
+            {
                 try
                 {
                     using (ClientContext cc = this.CreateClientContext(sites[0]))
@@ -388,7 +388,7 @@ namespace SharePoint.Modernization.Scanner.Core
                         this.EveryoneExceptExternalUsersClaim = cc.Web.GetEveryoneExceptExternalUsersClaim();
                     }
                 }
-                catch(Exception)
+                catch (Exception)
                 {
                     // Catch exceptions here, typical case is if the used site collection was locked. Do one more try with the root site 
                     var uri = new Uri(sites[0]);
@@ -451,7 +451,7 @@ namespace SharePoint.Modernization.Scanner.Core
                         }
                     }
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     TeamifiedSiteCollectionsLoaded = false;
                 }
@@ -461,7 +461,7 @@ namespace SharePoint.Modernization.Scanner.Core
                     if (this.ScannerTelemetry != null)
                     {
                         var uri = new Uri(sites[0]);
-                        this.ScannerTelemetry.LoadAADTenantId($"{uri.Scheme}://{uri.DnsSafeHost}");                        
+                        this.ScannerTelemetry.LoadAADTenantId($"{uri.Scheme}://{uri.DnsSafeHost}");
                     }
                 }
                 catch (Exception ex)
@@ -1048,12 +1048,13 @@ namespace SharePoint.Modernization.Scanner.Core
                 }
 
                 MemoryStream modernizationWorkflowScanResults = new MemoryStream();
-                outputHeaders = new string[] { "Site Url", "Site Collection Url", "Definition Name", "Migration to Flow recommended", "Version", "Scope", "Has subscriptions", "Enabled", "Is OOB",
+                outputHeaders = new string[] { "Site Url", "Site Collection Url", "Definition Name", "Migration to Flow recommended", "Version", "Scope", "Has subscriptions", "Enabled", 
+                                               "Is OOB","OOB Workflow Name",
                                                "List Title", "List Url", "List Id", "ContentType Name", "ContentType Id",
                                                "Restricted To", "Definition description", "Definition Id", "Subscription Name", "Subscription Id",
                                                "Definition Changed On", "Subscription Changed On", "Admins", "Owners",
                                                "Action Count", "Used Actions", "Used Triggers", "Flow upgradability", "Incompatible Action Count", "Incompatible Actions",
-                                               "Change Year", "Change Quarter", "Change Month" };
+                                               "Change Year", "Change Quarter", "Change Month", "Last List Item Edit", "Last List Item Edit By User", "Last Web Edit", "Last Web Edit By User", "Upgrade Efforts", "Total Action Count"};
 
                 outStream = new StreamWriter(modernizationWorkflowScanResults);
 
@@ -1061,14 +1062,51 @@ namespace SharePoint.Modernization.Scanner.Core
                 outStream.Write(string.Format("{0}\r\n", string.Join(this.Separator, outputHeaders)));
                 foreach (var workflow in this.WorkflowScanResults)
                 {
+                    outStream.Write(string.Format("{0}\r\n",
+                        string.Join(this.Separator,
+                                ToCsv(workflow.Value.SiteURL),
+                                ToCsv(workflow.Value.SiteColUrl),
+                                ToCsv(workflow.Value.DefinitionName),
+                                    workflow.Value.ConsiderUpgradingToFlow,
+                                ToCsv(workflow.Value.Version),
+                                ToCsv(workflow.Value.Scope),
+                                    workflow.Value.HasSubscriptions,
+                                    workflow.Value.Enabled,
+                                    workflow.Value.IsOOBWorkflow, // OOB workflow
 
-                    outStream.Write(string.Format("{0}\r\n", string.Join(this.Separator, ToCsv(workflow.Value.SiteURL), ToCsv(workflow.Value.SiteColUrl), ToCsv(workflow.Value.DefinitionName), workflow.Value.ConsiderUpgradingToFlow, ToCsv(workflow.Value.Version), ToCsv(workflow.Value.Scope), workflow.Value.HasSubscriptions, workflow.Value.Enabled, workflow.Value.IsOOBWorkflow,
-                                                                                           ToCsv(workflow.Value.ListTitle), ToCsv(workflow.Value.ListUrl), workflow.Value.ListId.ToString(), ToCsv(workflow.Value.ContentTypeName), ToCsv(workflow.Value.ContentTypeId),
-                                                                                           ToCsv(workflow.Value.RestrictToType), ToCsv(workflow.Value.DefinitionDescription), workflow.Value.DefinitionId.ToString(), ToCsv(workflow.Value.SubscriptionName), workflow.Value.SubscriptionId.ToString(),
-                                                                                           ToDateString(workflow.Value.LastDefinitionEdit, this.DateFormat), ToDateString(workflow.Value.LastSubscriptionEdit, this.DateFormat), ToCsv(SiteScanResult.FormatUserList(workflow.Value.Admins, this.EveryoneClaim, this.EveryoneExceptExternalUsersClaim)), ToCsv(SiteScanResult.FormatUserList(workflow.Value.Owners, this.EveryoneClaim, this.EveryoneExceptExternalUsersClaim)),
-                                                                                           workflow.Value.ActionCount, ToCsv(PublishingPageScanResult.FormatList(workflow.Value.UsedActions)), ToCsv(PublishingPageScanResult.FormatList(workflow.Value.UsedTriggers)), workflow.Value.ToFLowMappingPercentage, workflow.Value.UnsupportedActionCount, ToCsv(PublishingPageScanResult.FormatList(workflow.Value.UnsupportedActionsInFlow)),
-                                                                                           ToYearString(workflow.Value.LastDefinitionEdit), ToQuarterString(workflow.Value.LastDefinitionEdit), ToMonthString(workflow.Value.LastDefinitionEdit)
-                                                     )));
+                                    workflow.Value.OOBWorkflowName, // OOB workflow Name
+
+                                ToCsv(workflow.Value.ListTitle), // List Title
+                                ToCsv(workflow.Value.ListUrl), // List URL
+                                    workflow.Value.ListId.ToString(),
+                                ToCsv(workflow.Value.ContentTypeName),
+                                ToCsv(workflow.Value.ContentTypeId),
+                                ToCsv(workflow.Value.RestrictToType),
+                                ToCsv(workflow.Value.DefinitionDescription),
+                                    workflow.Value.DefinitionId.ToString(),
+                                ToCsv(workflow.Value.SubscriptionName),
+                                    workflow.Value.SubscriptionId.ToString(),
+                                    ToDateString(workflow.Value.LastDefinitionEdit, this.DateFormat),
+                                    ToDateString(workflow.Value.LastSubscriptionEdit, this.DateFormat),
+                                ToCsv(SiteScanResult.FormatUserList(workflow.Value.Admins, this.EveryoneClaim, this.EveryoneExceptExternalUsersClaim)),
+                                ToCsv(SiteScanResult.FormatUserList(workflow.Value.Owners, this.EveryoneClaim, this.EveryoneExceptExternalUsersClaim)),
+                                    workflow.Value.ActionCount,
+                                ToCsv(PublishingPageScanResult.FormatList(workflow.Value.UsedActions)),
+                                ToCsv(PublishingPageScanResult.FormatList(workflow.Value.UsedTriggers)),
+                                    workflow.Value.ToFLowMappingPercentage, // Upgradability, Upgrade Efforts
+                                    workflow.Value.UnsupportedActionCount,  // Unsupported Acounts Count
+                                ToCsv(PublishingPageScanResult.FormatList(workflow.Value.UnsupportedActionsInFlow)),
+                                ToYearString(workflow.Value.LastDefinitionEdit),
+                                ToQuarterString(workflow.Value.LastDefinitionEdit),
+                                ToMonthString(workflow.Value.LastDefinitionEdit),
+                                workflow.Value.LastListItemEdit,
+                                workflow.Value.LastListItemEditByUser,
+                                workflow.Value.LastWebItemEdit,
+                                workflow.Value.LastWebItemEditByUser,
+                                workflow.Value.UpgradeEfforts,
+                                workflow.Value.TotalActionCount
+                        )
+                    ));
                 }
 
                 outStream.Flush();
@@ -1203,7 +1241,7 @@ namespace SharePoint.Modernization.Scanner.Core
                         outStream.Write(string.Format("{0}\r\n", string.Join(this.Separator, ToCsv(scanError.SiteURL), ToCsv(scanError.SiteColUrl), ToCsv(scanError.Error), ToCsv(scanError.Field1), ToCsv(scanError.Field2), ToCsv(scanError.Field3))));
                     }
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
 
                 }
