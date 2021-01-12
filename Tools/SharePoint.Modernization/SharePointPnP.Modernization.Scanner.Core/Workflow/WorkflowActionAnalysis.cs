@@ -20,5 +20,7 @@ namespace SharePoint.Modernization.Scanner.Core.Workflow
         public decimal UpgradeEfforts { get; set; }
 
         public DateTime LastListItemEdit { get; set; }
+
+        public int ListItemCount { get; set; }
     }
 }

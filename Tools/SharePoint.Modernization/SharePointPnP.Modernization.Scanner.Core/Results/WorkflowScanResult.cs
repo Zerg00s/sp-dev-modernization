@@ -111,6 +111,8 @@ namespace SharePoint.Modernization.Scanner.Core.Results
 
         public DateTime LastWebItemEditByUser { get; set; }
 
+        
+
         public DateTime LastDefinitionEdit { get; set; }
 
         /// <summary>
@@ -124,6 +126,7 @@ namespace SharePoint.Modernization.Scanner.Core.Results
 
         public decimal UpgradeEfforts { get; set; }
         public int TotalActionCount { get; set; }
+        public int ListItemCount { get; set; }
 
 
     }

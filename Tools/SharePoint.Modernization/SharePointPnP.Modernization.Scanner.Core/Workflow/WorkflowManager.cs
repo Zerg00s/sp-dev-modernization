@@ -114,7 +114,7 @@ namespace SharePoint.Modernization.Scanner.Core.Workflow
             { "WaitForDocumentStatusActivity",(decimal)0.17 }, // 10 min
             { "SetVariableActivity",(decimal)0.17 }, // 10 min
             { "BuildStringActivity",(decimal)0.17 }, // 10 min
-            { "MathActivity",(decimal)0.8 }, // 5 min
+            { "MathActivity",(decimal)0.08 }, // 5 min
             { "DelayForActivity",(decimal)0.17 }, // 10 min
             { "DelayUntilActivity",(decimal)0.17 }, // 10 min
             { "TerminateActivity",(decimal)0.17 }, // 10 min

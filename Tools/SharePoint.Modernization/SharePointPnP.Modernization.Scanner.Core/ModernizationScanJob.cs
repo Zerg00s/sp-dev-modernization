@@ -1054,7 +1054,7 @@ namespace SharePoint.Modernization.Scanner.Core
                                                "Restricted To", "Definition description", "Definition Id", "Subscription Name", "Subscription Id",
                                                "Definition Changed On", "Subscription Changed On", "Admins", "Owners",
                                                "Action Count", "Used Actions", "Used Triggers", "Flow upgradability", "Incompatible Action Count", "Incompatible Actions",
-                                               "Change Year", "Change Quarter", "Change Month", "Last List Item Edit", "Last List Item Edit By User", "Last Web Edit", "Last Web Edit By User", "Upgrade Efforts", "Total Action Count"};
+                                               "Change Year", "Change Quarter", "Change Month", "Last List Item Edit", "Last List Item Edit By User", "Last Web Edit", "Last Web Edit By User", "Upgrade Efforts", "Total Action Count", "List Item Count"};
 
                 outStream = new StreamWriter(modernizationWorkflowScanResults);
 
@@ -1104,7 +1104,8 @@ namespace SharePoint.Modernization.Scanner.Core
                                 workflow.Value.LastWebItemEdit,
                                 workflow.Value.LastWebItemEditByUser,
                                 workflow.Value.UpgradeEfforts,
-                                workflow.Value.TotalActionCount
+                                workflow.Value.TotalActionCount,
+                                workflow.Value.ListItemCount
                         )
                     ));
                 }

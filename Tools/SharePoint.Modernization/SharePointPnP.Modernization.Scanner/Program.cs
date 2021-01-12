@@ -35,7 +35,7 @@ namespace SharePoint.Modernization.Scanner
                 if (string.IsNullOrEmpty(options.User) && string.IsNullOrEmpty(options.ClientID) && string.IsNullOrEmpty(options.AccessToken))
                 {
                     // Trigger validation which will show usage information
-                    options.ValidateOptions(args);
+                    options.ValidateOptions(args);                    
                 }
             }
             else

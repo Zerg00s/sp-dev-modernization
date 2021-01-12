@@ -79,6 +79,7 @@ namespace SharePoint.Modernization.Scanner.Core.Analyzers
         /// <returns>Duration of the workflow analysis</returns>
         public override TimeSpan Analyze(ClientContext cc)
         {
+
             try
             {
                 // Workflow analysis does not work as the xoml / xaml files can't be read with Sites.Read.All permission
@@ -92,7 +93,7 @@ namespace SharePoint.Modernization.Scanner.Core.Analyzers
                 // Pre-load needed properties in a single call
                 cc.Load(web, _web => _web.Id, _web => _web.Language, _web => _web.ServerRelativeUrl, _web => _web.Url, _web => _web.WorkflowTemplates, _web => _web.WorkflowAssociations, _web => _web.LastItemModifiedDate, _web => _web.LastItemUserModifiedDate);
                 cc.Load(web, p => p.ContentTypes.Include(ct => ct.WorkflowAssociations, ct => ct.Name, ct => ct.StringId));
-                cc.Load(web, _web => _web.Lists.Include(list => list.Id, list => list.LastItemUserModifiedDate, list => list.LastItemModifiedDate, list => list.Title, list => list.Hidden, li => li.DefaultViewUrl, li => li.BaseTemplate, li => li.RootFolder.ServerRelativeUrl, li => li.ItemCount, li => li.WorkflowAssociations, li => li.ContentTypesEnabled, li => li.ContentTypes.Include(ct => ct.WorkflowAssociations, ct => ct.Name, ct => ct.StringId)));
+                cc.Load(web, _web => _web.Lists.Include(list => list.Id, list => list.LastItemUserModifiedDate, list => list.ItemCount , list => list.LastItemModifiedDate, list => list.Title, list => list.Hidden, li => li.DefaultViewUrl, li => li.BaseTemplate, li => li.RootFolder.ServerRelativeUrl, li => li.ItemCount, li => li.WorkflowAssociations, li => li.ContentTypesEnabled, li => li.ContentTypes.Include(ct => ct.WorkflowAssociations, ct => ct.Name, ct => ct.StringId)));
                 cc.Load(cc.Site, p => p.RootWeb);
                 cc.Load(cc.Site.RootWeb, p => p.Lists.Include(li => li.Id, li => li.Title, li => li.Hidden, li => li.DefaultViewUrl, li => li.BaseTemplate, li => li.RootFolder.ServerRelativeUrl, li => li.ItemCount, li => li.WorkflowAssociations, li => li.ContentTypesEnabled, li => li.ContentTypes.Include(ct => ct.WorkflowAssociations, ct => ct.Name, ct => ct.StringId)));
                 cc.ExecuteQueryRetry();
@@ -485,7 +486,9 @@ namespace SharePoint.Modernization.Scanner.Core.Analyzers
                                     LastWebItemEdit = web.LastItemModifiedDate,
                                     LastWebItemEditByUser = web.LastItemUserModifiedDate,
                                     UpgradeEfforts = Math.Round(workFlowAnalysisResult != null ? workFlowAnalysisResult.UpgradeEfforts : OOTBWorkflowEfforts(workflowTemplate.Id.ToString()),1),
-                                    TotalActionCount = workFlowAnalysisResult != null ? workFlowAnalysisResult.TotalActionCount : 0
+                                    TotalActionCount = workFlowAnalysisResult != null ? workFlowAnalysisResult.TotalActionCount : 0,
+                                    ListItemCount = associatedWorkflow.AssociatedList != null ? associatedWorkflow.AssociatedList.ItemCount : 0,
+
                                 };
 
                                 if (!this.ScanJob.WorkflowScanResults.TryAdd($"workflowScanResult.SiteURL.{Guid.NewGuid()}", workflowScanResult))
@@ -621,7 +624,8 @@ namespace SharePoint.Modernization.Scanner.Core.Analyzers
                             LastWebItemEdit = web.LastItemModifiedDate,
                             LastWebItemEditByUser = web.LastItemUserModifiedDate,
                             UpgradeEfforts = workFlowAnalysisResult != null ? workFlowAnalysisResult.UpgradeEfforts : 0,
-                            TotalActionCount = workFlowAnalysisResult != null ? workFlowAnalysisResult.TotalActionCount : 0
+                            TotalActionCount = workFlowAnalysisResult != null ? workFlowAnalysisResult.TotalActionCount : 0,
+                            ListItemCount = associatedWorkflow.AssociatedList != null ? associatedWorkflow.AssociatedList.ItemCount : 0,
 
 
 
